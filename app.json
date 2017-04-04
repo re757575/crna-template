@@ -1,0 +1,15 @@
+{
+  "expo":  {
+   "name": "crna-template",
+   "icon": "https://s3.amazonaws.com/exp-us-standard/rnplay/app-icon.png",
+   "version": "0.0.1",
+   "slug": "rnplay",
+   "sdkVersion": "15.0.0",
+   "ios": {
+     "bundleIdentifier": "org.rnplay.exp"
+   },
+   "android": {
+     "package": "org.rnplay.exp"
+   }
+ }
+}
