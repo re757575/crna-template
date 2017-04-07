@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableHighlight,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import Expo, { Permissions, } from 'expo';
 import * as firebase from 'firebase';
@@ -21,6 +22,7 @@ export default class App extends React.Component {
     this.state = {
       text: '',
       animating: true,
+      refreshing: false,
       dataSource: ds.cloneWithRows([]),
     };
 
@@ -44,6 +46,7 @@ export default class App extends React.Component {
       firebase.database().ref('todo/'+ (new Date).getTime()).set({
         title: this.state.text
       });
+      this.setState({text: ''});
     }
   }
 
@@ -88,6 +91,31 @@ export default class App extends React.Component {
     );
   }
 
+  onRefresh() {
+    this.setState({
+      refreshing: true,
+      dataSource: this.state.dataSource.cloneWithRows([{ title: 'loading' }])
+    });
+
+    setTimeout(() => {
+      this.itemsRef.once('value').then((snap) => {
+        let items = [];
+
+        snap.forEach((child) => {
+          items.push({
+            title: child.val().title,
+            _key: child.key
+          });
+        });
+
+        this.setState({
+          refreshing: false,
+          dataSource: this.state.dataSource.cloneWithRows(items)
+        });
+      });
+    }, 300);
+  }
+
   render() {
     return (
       <View style={styles.container}>
@@ -100,6 +128,9 @@ export default class App extends React.Component {
           <TextInput
             style={styles.input}
             onChangeText={(text) => this.setState({text})}
+            value={this.state.text}
+            placeholder={'Type todo!'}
+            underlineColorAndroid={'#fff'}
           />
           <TouchableHighlight
               style={styles.button}
@@ -109,15 +140,29 @@ export default class App extends React.Component {
           </TouchableHighlight>
         </View>
         <ListView
+          style={styles.listView}
+          
           dataSource={this.state.dataSource}
           enableEmptySections={true}
           renderRow={this.renderRow.bind(this)}
+          refreshControl={
+            <RefreshControl
+              refreshing={this.state.refreshing}
+              onRefresh={() => this.onRefresh()}
+              title="Loading..."
+            />
+          }
         />
         <ActivityIndicator
           animating={this.state.animating}
           style={[styles.centering, {height: 80}]}
           size="large"
         />
+        <View style={styles.footerView}>
+          <Text style={styles.titleText}>
+            Footer
+          </Text>
+        </View>
       </View>
     );
   }
@@ -127,13 +172,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  titleView:{
+  titleView: {
     backgroundColor: '#48afdb',
     paddingTop: 30,
     paddingBottom: 10,
     flexDirection: 'row'
   },
-  titleText:{
+  listView: {
+    marginLeft: 5,
+    marginRight: 5,
+  },
+  titleText: {
     color: '#fff',
     textAlign: 'center',
     fontWeight: 'bold',
@@ -143,6 +192,12 @@ const styles = StyleSheet.create({
   inputcontainer: {
     marginTop: 5,
     padding: 10,
+    flexDirection: 'row'
+  },
+  footerView: {
+    backgroundColor: '#48afdb',
+    paddingTop: 10,
+    paddingBottom: 10,
     flexDirection: 'row'
   },
   button: {
@@ -162,7 +217,7 @@ const styles = StyleSheet.create({
     height: 36,
     padding: 4,
     marginRight: 5,
-    flex: 4,
+    flex: 6,
     fontSize: 18,
     borderWidth: 1,
     borderColor: '#48afdb',
